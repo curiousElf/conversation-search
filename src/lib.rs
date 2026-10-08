@@ -1,0 +1,11 @@
+pub mod agent;
+pub mod daemon;
+pub mod ingest;
+pub mod mcp;
+pub mod parse;
+pub mod paths;
+pub mod reindex;
+pub mod store;
+pub mod watch;
+pub mod timestamps;
+pub mod transcripts;

@@ -1,0 +1,3 @@
+{"type": "session_meta", "timestamp": "2026-01-05T08:00:00.000Z", "payload": {"id": "0199f001-1111-7222-8333-444455556666", "cwd": "/Users/me/scratch", "originator": "codex_cli_rs", "cli_version": "0.149.1", "source": {"type": "cli"}}}
+{"type": "response_item", "timestamp": "2026-01-05T08:00:01.000Z", "payload": {"type": "message", "role": "user", "content": [{"type": "input_text", "text": "One question, no tools."}]}}
+{"type": "response_item", "timestamp": "2026-01-05T08:00:02.000Z", "payload": {"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": "One answer."}]}}

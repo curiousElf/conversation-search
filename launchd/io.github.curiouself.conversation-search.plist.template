@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>io.github.curiouself.conversation-search</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>__BINARY__</string>
+    <string>serve</string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <!-- Relaunch after a crash or non-zero exit, but not after a clean exit: the
+       daemon exits 0 once it has logged a permanent failure, so launchd does
+       not loop on something a restart cannot fix. -->
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
+
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+
+  <!-- Application logs go to the daemon's own daily-rolled file. launchd only
+       captures startup failures, before logging is up. -->
+  <key>StandardErrorPath</key>
+  <string>__LOG_DIR__/launchd-stderr.log</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>RUST_LOG</key>
+    <string>info,tantivy=warn</string>
+  </dict>
+
+  <key>ProcessType</key>
+  <string>Background</string>
+</dict>
+</plist>
