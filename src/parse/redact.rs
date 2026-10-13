@@ -1,12 +1,12 @@
-//! Secret redaction, ported from the v1 Codex parser.
+//! Secret redaction for Codex turns, applied before indexing.
 //!
-//! The two v1 patterns are reproduced exactly, quirks included, because parser
-//! parity is measured against v1's output byte for byte. In particular the
-//! second pattern's character classes contain a literal backslash and the
-//! letter `s` rather than the whitespace class, and its `+srv` branch can only
-//! match a literal backslash — that is what v1 does, so that is what this does.
+//! Two patterns:
+//! 1. A credential keyword followed by `:`/`=`/quotes/whitespace and a value:
+//!    the keyword is kept and the value becomes `<redacted>`.
+//! 2. A `mongodb://` or `mongodb+srv://` connection string, replaced whole by
+//!    `secret<redacted>`.
 //!
-//! Applied to Codex turns only. Claude Code turns are not redacted by v1.
+//! Claude Code turns are not redacted.
 
 const KEYWORDS: [&str; 6] = ["token", "secret", "password", "api_key", "api-key", "apikey"];
 
@@ -15,7 +15,7 @@ pub fn redact(text: &str) -> String {
     redact_mongodb_urls(&after_assignments)
 }
 
-/// v1 pattern 1: `(?i)(token|secret|password|api[_-]?key|credential)([\"'\s:=]+)[^\"'\s,}]+`
+/// Pattern 1, as a regex: `(?i)(token|secret|password|api[_-]?key|credential)([\"'\s:=]+)[^\"'\s,}]+`
 fn redact_assignments(text: &str) -> String {
     let chars: Vec<char> = text.chars().collect();
     let mut out = String::with_capacity(text.len());
@@ -104,8 +104,7 @@ fn is_python_space(c: char) -> bool {
     c.is_whitespace() || ('\u{1c}'..='\u{1f}').contains(&c)
 }
 
-/// v1 pattern 2: `mongodb(?:\\+srv)?://[^\\s\"']+` with no capture group, so the
-/// replacement is the literal `secret<redacted>`.
+/// Pattern 2, as a regex: `mongodb(?:\+srv)?://[^\s\"']+`.
 fn redact_mongodb_urls(text: &str) -> String {
     let chars: Vec<char> = text.chars().collect();
     let mut out = String::with_capacity(text.len());
@@ -129,24 +128,12 @@ fn match_mongodb_url(chars: &[char], start: usize) -> Option<usize> {
     if !starts_with_at(chars, start, "mongodb") {
         return None;
     }
-    let after_scheme = start + "mongodb".len();
-
-    // `(?:\\+srv)?` — one or more literal backslashes then `srv`. Greedy option
-    // first, then the empty option, as the regex engine tries them.
-    let mut cursor = after_scheme;
-    let mut backslashes = cursor;
-    while backslashes < chars.len() && chars[backslashes] == '\\' {
-        backslashes += 1;
-    }
-    if backslashes > cursor && starts_with_at(chars, backslashes, "srv") {
-        cursor = backslashes + 3;
+    let mut cursor = start + "mongodb".len();
+    if starts_with_at(chars, cursor, "+srv") {
+        cursor += "+srv".len();
     }
     if !starts_with_at(chars, cursor, "://") {
-        // Retry without the optional group.
-        cursor = after_scheme;
-        if !starts_with_at(chars, cursor, "://") {
-            return None;
-        }
+        return None;
     }
     let mut end = cursor + 3;
     let body_start = end;
@@ -160,7 +147,7 @@ fn match_mongodb_url(chars: &[char], start: usize) -> Option<usize> {
 }
 
 fn is_url_body(c: char) -> bool {
-    !(c == '\\' || c == 's' || c == '"' || c == '\'')
+    !(c == '"' || c == '\'' || is_python_space(c))
 }
 
 fn starts_with_at(chars: &[char], start: usize, needle: &str) -> bool {
@@ -187,14 +174,30 @@ mod tests {
 
     #[test]
     fn mongodb_url_is_replaced_wholesale() {
-        // The v1 class `[^\\s\"']+` excludes the letter `s`, so the match stops
-        // at the `s` in `host`. Reproduced deliberately.
-        assert_eq!(redact("see mongodb://host/db"), "see secret<redacted>st/db");
+        assert_eq!(
+            redact("see mongodb://user:pass@hosts.example.com:27017/db?ssl=true done"),
+            "see secret<redacted> done"
+        );
     }
 
     #[test]
-    fn plus_srv_form_is_not_matched_because_v1_does_not_match_it() {
-        let text = "mongodb+srv://cluster/db";
-        assert_eq!(redact(text), text);
+    fn plus_srv_url_is_replaced_wholesale() {
+        assert_eq!(
+            redact("mongodb+srv://user:pass@cluster0.example.mongodb.net/db"),
+            "secret<redacted>"
+        );
+    }
+
+    #[test]
+    fn mongodb_url_stops_at_quotes_and_whitespace() {
+        assert_eq!(redact("uri=\"mongodb://h/db\" next"), "uri=\"secret<redacted>\" next");
+        assert_eq!(redact("a mongodb://h/db\tb"), "a secret<redacted>\tb");
+    }
+
+    #[test]
+    fn mongodb_without_a_url_is_left_alone() {
+        assert_eq!(redact("mongodb is a database"), "mongodb is a database");
+        assert_eq!(redact("mongodb:// alone"), "mongodb:// alone");
+        assert_eq!(redact("mongodb+srv:/typo"), "mongodb+srv:/typo");
     }
 }
