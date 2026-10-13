@@ -2,7 +2,7 @@
 //!
 //! Only `response_item` records carry indexed content. The parallel `event_msg`
 //! records repeat the same text and are ignored so nothing is indexed twice.
-//! Every piece of text passes through redaction, as in v1.
+//! Every piece of text passes through redaction.
 
 use super::redact::redact;
 use super::{

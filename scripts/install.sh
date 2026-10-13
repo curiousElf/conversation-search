@@ -2,11 +2,11 @@
 # Build, install, and register the conversation-search v2 daemon.
 #
 # Registration goes through `claude mcp` and `codex mcp` only. This script never
-# edits ~/.claude.json or ~/.codex/config.toml, and never reads, changes, or
-# removes the v1 entries.
+# edits ~/.claude.json or ~/.codex/config.toml, and touches no MCP entry other
+# than its own.
 #
 #   scripts/install.sh          # build, swap, health-check, register
-#   FORCE=1 scripts/install.sh  # also re-register a v2 entry pointing elsewhere
+#   FORCE=1 scripts/install.sh  # also replace an existing entry pointing elsewhere
 set -euo pipefail
 
 # Homebrew first: the Homebrew codex is the one that understands `mcp add --url`.
@@ -151,7 +151,7 @@ rollback() {
     note "pointed current back at the recorded store"
   fi
 
-  # Undo only what this run changed. v1 entries are never touched.
+  # Undo only what this run changed.
   if [ "$REGISTERED_CLAUDE" = 1 ]; then
     if [ -n "$PRIOR_CLAUDE_URL" ]; then
       claude mcp remove --scope user "$NAME" >/dev/null 2>&1 || true

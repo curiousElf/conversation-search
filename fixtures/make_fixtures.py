@@ -145,8 +145,7 @@ def claude_subagent_session() -> list:
                           {"type": "tool_use", "id": "toolu_s1", "name": "Glob",
                            "input": {"pattern": "src/**/*.mjs"}},
                       ]}),
-        # Empty user content: v1 opens a turn that can never be saved. Kept so the
-        # port has to reproduce that behaviour.
+        # Empty user content: must not open a turn.
         dict(base, type="user", uuid="bbbb0001-0000-4000-8000-000000000003",
              timestamp="2026-02-03T09:05:30.000Z",
              message={"role": "user", "content": ""}),

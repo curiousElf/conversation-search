@@ -97,9 +97,8 @@ pub fn parse(bytes: &[u8], ctx: &ParseContext) -> anyhow::Result<Parsed> {
                 next_turn_number += 1;
             }
             if text.is_empty() {
-                // v1 opens a turn here that it can never save, because it refuses
-                // to emit a turn with no user text. Not opening one produces the
-                // same turns and lets the checkpoint move past the record.
+                // A turn needs user text, so none is opened for this record.
+                // Skipping it also lets the checkpoint move past the record.
                 continue;
             }
             current = Some(OpenTurn {
@@ -293,7 +292,7 @@ mod tests {
     }
 
     #[test]
-    fn tool_summaries_are_appended_in_v1_format() {
+    fn tool_summaries_are_appended_after_the_text() {
         let bytes = concat!(
             r#"{"type":"user","message":{"role":"user","content":"go"}}"#,
             "\n",

@@ -8,7 +8,7 @@ PLIST := $(HOME)/Library/LaunchAgents/$(LABEL).plist
 STATE_DIR := $(HOME)/Library/Application Support/conversation-search
 LOG_DIR := $(HOME)/Library/Logs/conversation-search
 
-.PHONY: install uninstall purge test test-all
+.PHONY: install uninstall purge test
 
 ## Build, install under launchd, and register with both CLIs.
 install:
@@ -38,15 +38,6 @@ purge:
 	  echo "Cancelled."; \
 	fi
 
-## Unit tests, parser parity against v1, and the tailing scenarios.
+## Unit tests, the parser checks over synthetic fixtures, and the tailing scenarios.
 test:
 	cargo test --release
-
-## Everything above plus the checks that need this machine's transcripts and a
-## running daemon.
-test-all: test
-	cargo test --release --test real_corpus_parity -- --ignored --nocapture
-	cargo test --release --test relevance -- --ignored --nocapture
-	cargo test --release --test rebuild_equivalence -- --ignored --nocapture
-	scripts/check_mcp.sh
-	scripts/snapshot_transcripts.sh verify

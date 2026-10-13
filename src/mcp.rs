@@ -1,7 +1,6 @@
 //! The MCP tools and the HTTP endpoint that serves them.
 //!
-//! Raw tool names are identical to v1 and never change; the two servers are told
-//! apart by their registration names. Every content tool takes a required `cli`
+//! Tool names are stable. Every content tool takes a required `cli`
 //! argument — `claude_code`, `codex`, or `all` — so a caller always says which
 //! corpus it means, and every result carries the `cli` it came from.
 

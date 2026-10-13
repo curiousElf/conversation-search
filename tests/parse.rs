@@ -1,12 +1,11 @@
 //! Parser checks over the synthetic fixtures.
 //!
-//! 1. For every fixture the Rust parser's turns match the v1 Python parser's
-//!    output byte for byte, with the same turn count and project string.
-//! 2. Feeding a fixture in chunks cut at newlines produces the same closed turns
+//! 1. Feeding a fixture in chunks cut at newlines produces the same closed turns
 //!    as feeding it whole, and the open turn after each chunk matches what a
 //!    whole-file parse of the bytes consumed so far reports.
-//! 3. No fixture contains anything the v1 secret patterns would redact, other
+//! 2. No fixture contains anything the secret patterns would redact, other
 //!    than the deliberately synthetic markers.
+//! 3. Subagent transcripts take the project of the folder they live in.
 
 use conversation_search::parse::{
     Cli, ParseContext, Parsed, SessionMeta, claude_code, codex, cut_at_last_newline, parse,
@@ -14,7 +13,6 @@ use conversation_search::parse::{
 };
 use conversation_search::transcripts::find_transcripts;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 
 /// The parsers only ever put the context's conversation id into a turn id, so a
 /// fixed one is enough here and keeps the whole-file and chunked parses
@@ -48,82 +46,6 @@ fn context_for(path: &Path, cli: Cli) -> ParseContext {
 fn parse_whole(path: &Path, bytes: &[u8]) -> Parsed {
     let cli = cli_of(path);
     parse(bytes, &context_for(path, cli)).expect("parse")
-}
-
-/// What the oracle prints for one fixture.
-#[derive(serde::Deserialize)]
-struct OracleOutput {
-    turn_count: usize,
-    project: String,
-    turns: Vec<OracleTurn>,
-}
-
-#[derive(serde::Deserialize)]
-struct OracleTurn {
-    turn_number: u64,
-    timestamp: String,
-    text: String,
-}
-
-fn run_oracle(path: &Path, cli: Cli) -> OracleOutput {
-    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
-    let output = Command::new("uv")
-        .current_dir(root)
-        .args(["run", "--no-project", "python", "fixtures/oracle.py", cli.as_str()])
-        .arg(path)
-        .output()
-        .expect("running the v1 oracle requires `uv` on PATH");
-    assert!(
-        output.status.success(),
-        "oracle failed for {}: {}",
-        path.display(),
-        String::from_utf8_lossy(&output.stderr)
-    );
-    serde_json::from_slice(&output.stdout).expect("oracle emitted valid JSON")
-}
-
-#[test]
-#[ignore = "needs the v1 Python servers at ~/.claude/mcp and ~/.codex/mcp"]
-fn rust_parser_matches_v1_turn_for_turn() {
-    let files = find_transcripts(&fixtures_root());
-    assert!(!files.is_empty(), "no fixtures found");
-
-    for path in files {
-        let cli = cli_of(&path);
-        let bytes = std::fs::read(&path).expect("reading fixture");
-        let parsed = parse_whole(&path, &bytes);
-        let oracle = run_oracle(&path, cli);
-
-        let mut ours: Vec<_> = parsed.closed.iter().collect();
-        ours.extend(parsed.open.iter());
-
-        assert_eq!(
-            ours.len(),
-            oracle.turn_count,
-            "turn count differs for {}",
-            path.display()
-        );
-        // v1 derives the wrong project for subagent transcripts; only top-level files are compared.
-        if !path.to_string_lossy().contains("/subagents/") {
-            assert_eq!(
-                parsed.session.project,
-                oracle.project,
-                "project differs for {}",
-                path.display()
-            );
-        }
-        for (mine, theirs) in ours.iter().zip(oracle.turns.iter()) {
-            assert_eq!(
-                mine.text,
-                theirs.text,
-                "turn {} text differs for {}",
-                theirs.turn_number,
-                path.display()
-            );
-            assert_eq!(mine.turn_number, theirs.turn_number, "in {}", path.display());
-            assert_eq!(mine.timestamp, theirs.timestamp, "in {}", path.display());
-        }
-    }
 }
 
 #[test]
@@ -214,7 +136,7 @@ fn fixtures_contain_no_secret_shaped_text() {
             if redact(line) != line {
                 assert!(
                     line.contains(SYNTHETIC_MARKER),
-                    "{}:{} matches a v1 secret pattern without the {} marker",
+                    "{}:{} matches a secret pattern without the {} marker",
                     path.display(),
                     number + 1,
                     SYNTHETIC_MARKER

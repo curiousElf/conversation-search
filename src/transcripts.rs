@@ -59,7 +59,7 @@ pub fn prefix_hash(file: &mut File, offset: u64) -> Result<String> {
 /// skipped rather than failing the whole scan.
 ///
 /// Symlinked transcripts are included — Claude Code links a subagent transcript
-/// into a second session's folder, and v1 indexes both paths. Symlinked
+/// into a second session's folder, and both paths are indexed. Symlinked
 /// *directories* are not followed, so a link cycle cannot spin the walk.
 pub fn find_transcripts(root: &Path) -> Vec<PathBuf> {
     let mut found = Vec::new();

@@ -10,7 +10,7 @@ I thought it would be better instead if I had a daemon process running that was 
 
 ## Credit
 
-This project builds on Eric W. Tramel's post [Searchable Agent Memory in a Single File](https://eric-tramel.github.io/blog/2026-02-07-searchable-agent-memory/). The post describes a single-file Python MCP server that indexes Claude Code JSONL transcripts with BM25. "v1" in this repo means that Python server plus a Codex variant of it. This repo rewrites both in Rust as one long-running daemon.
+This project builds on Eric W. Tramel's post [Searchable Agent Memory in a Single File](https://eric-tramel.github.io/blog/2026-02-07-searchable-agent-memory/). The post describes a single-file Python MCP server that indexes Claude Code JSONL transcripts with BM25. This repo rewrites that idea in Rust as one long-running daemon that also covers Codex.
 
 ## Tools
 

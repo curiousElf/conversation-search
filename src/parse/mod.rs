@@ -114,7 +114,8 @@ pub fn cut_at_last_newline(bytes: &[u8]) -> usize {
     }
 }
 
-/// Python truthiness, for fields the v1 parsers test with a bare `if`.
+/// Whether a field counts as present: null, false, zero, and empty strings,
+/// arrays and objects do not.
 pub fn is_truthy(v: &Value) -> bool {
     match v {
         Value::Null => false,
@@ -139,9 +140,8 @@ pub fn char_count(s: &str) -> usize {
     s.chars().count()
 }
 
-/// Python's `str(value)` for a JSON value. The v1 parsers interpolate raw
-/// payload fields into summaries, so a non-string field has to render the way
-/// Python renders it or the text differs from the oracle.
+/// Renders a JSON value as Python's `str(value)` would. Tool summaries
+/// interpolate raw payload fields, and this fixes how non-string fields read.
 pub fn python_str(v: &Value) -> String {
     match v {
         Value::String(s) => s.clone(),
