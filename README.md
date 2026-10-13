@@ -63,14 +63,8 @@ conversation-search restart                      # restart the launchd agent
 ## Tests
 
 ```sh
-make test       # unit tests and the parser and tailing checks over synthetic fixtures
-make test-all   # also the checks that need real transcripts and a running daemon
+make test
 ```
-
-`make test-all` needs:
-
-- The v1 Python servers at `~/.claude/mcp/conversation_search.py` and `~/.codex/mcp/codex_conversation_search.py`, for the parser checks against v1.
-- `fixtures/relevance.json`, for the relevance check. Copy `fixtures/relevance.example.json` and fill it with queries from your own history.
 
 ## License
 
